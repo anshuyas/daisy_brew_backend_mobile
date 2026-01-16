@@ -4,9 +4,9 @@ const jwt = require('jsonwebtoken');
 
 // REGISTER USER
 exports.registerUser = async (req, res) => {
-    const { fullName, email, password, phoneNumber, username } = req.body;
+    const { fullName, email, password, confirmPassword } = req.body;
 
-    if (!email || !password || !fullName || !username) {
+    if (!email || !password || !fullName || !confirmPassword) {
         return res.status(400).json({
             success: false,
             message: 'Required fields missing'
@@ -27,8 +27,6 @@ exports.registerUser = async (req, res) => {
         fullName,
         email,
         password,
-        phoneNumber,
-        username
     });
 
     res.status(201).json({
