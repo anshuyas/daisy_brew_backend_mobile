@@ -1,71 +1,131 @@
 const User = require('../models/user_model');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // REGISTER USER
 exports.registerUser = async (req, res) => {
-    const { fullName, email, password, confirmPassword } = req.body;
+    try {
+        const { fullName, email, password, confirmPassword } = req.body;
 
-    if (!email || !password || !fullName || !confirmPassword) {
-        return res.status(400).json({
+        // Check required fields
+        if (!fullName || !email || !password || !confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Required fields missing'
+            });
+        }
+
+        // Check password match
+        if (password !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Passwords do not match'
+            });
+        }
+
+        // Check existing user
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email already exists'
+            });
+        }
+
+        const user = await User.create({
+            fullName,
+            email,
+            password
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'User registered successfully'
+        });
+
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({
             success: false,
-            message: 'Required fields missing'
+            message: 'Registration failed',
+            error: error.message
         });
     }
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-        return res.status(400).json({
-            success: false,
-            message: 'Email already exists'
-        });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-        fullName,
-        email,
-        password,
-    });
-
-    res.status(201).json({
-        success: true,
-        data: user
-    });
 };
 
 // LOGIN USER
 exports.loginUser = async (req, res) => {
-    const { email, password } = req.body;
+    try {
+        const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-        return res.status(401).json({
+        const user = await User.findOne({ email }).select('+password');
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
+
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
+
+        const token = user.getSignedJwtToken();
+        user.password = undefined;
+
+        res.status(200).json({
+            success: true,
+            token,
+            data: user
+        });
+
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
             success: false,
-            message: 'Invalid credentials'
+            message: 'Login failed',
+            error: error.message
         });
     }
+};
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-        return res.status(401).json({
+// UPLOAD PROFILE PICTURE
+exports.uploadProfilePicture = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        user.profilePicture = req.file.filename;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Profile picture uploaded successfully',
+            filename: req.file.filename,
+            url: `/public/profile_pictures/${req.file.filename}`
+        });
+
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).json({
             success: false,
-            message: 'Invalid credentials'
+            message: 'Upload failed',
+            error: error.message
         });
     }
-
-    const token = jwt.sign(
-        { id: user._id },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' }
-    );
-
-    user.password = undefined;
-
-    res.status(200).json({
-        success: true,
-        token,
-        data: user
-    });
 };

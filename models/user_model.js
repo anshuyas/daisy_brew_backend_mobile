@@ -3,16 +3,16 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const userSchema = new mongoose.Schema({
+    fullName: {
+        type: String,
+        required: true,
+        trim: true,
+    },
     email: {
         type: String,
         required: true,
         unique: true,
         lowercase: true,
-    },
-    username: {
-        type: String,
-        unique: true,
-        sparse: true, 
     },
     password: {
         type: String,
@@ -20,15 +20,19 @@ const userSchema = new mongoose.Schema({
         minlength: 6,
         select: false,
     },
+    profilePicture: {
+        type: String,
+        default: null,
+    },
     createdAt: {
         type: Date,
         default: Date.now,
     },
 });
 
-// Hash password
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
+// Hash password before saving
+userSchema.pre("save", async function () {
+    if (!this.isModified("password")) return;
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
@@ -36,7 +40,7 @@ userSchema.pre("save", async function (next) {
 // JWT
 userSchema.methods.getSignedJwtToken = function () {
     return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRE,
+        expiresIn: "7d",
     });
 };
 

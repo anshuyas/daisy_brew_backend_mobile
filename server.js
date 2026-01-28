@@ -1,5 +1,6 @@
 const express = require('express');
 const dotenv = require('dotenv');
+const path = require('path'); 
 require('colors');
 
 dotenv.config({ path: './config/config.env' });
@@ -15,6 +16,9 @@ const startServer = async () => {
 
         // BODY PARSER
         app.use(express.json());
+
+        // This allows return files from backend/public
+        app.use('/public', express.static(path.join(__dirname, 'public')));
 
         // ROUTE IMPORT
         const authRoutes = require('./routes/auth_route');
