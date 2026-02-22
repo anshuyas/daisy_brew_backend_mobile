@@ -1,5 +1,7 @@
 const User = require('../models/user_model');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const sendEmail = require('../utils/sendEmail');
 
 // REGISTER USER
 exports.registerUser = async (req, res) => {
@@ -90,6 +92,83 @@ exports.loginUser = async (req, res) => {
             error: error.message
         });
     }
+};
+
+// FORGOT PASSWORD
+exports.forgotPasswordController = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Generate a unique token
+    // Generate 6-digit numeric OTP
+const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+
+// Save hashed OTP
+const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+user.resetPasswordToken = hashedToken;
+user.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // OTP valid 10 minutes
+await user.save();
+
+    const message = `
+  <h3>Password Reset Request</h3>
+  <p>Your OTP for password reset is:</p>
+  <h1>${resetToken}</h1>
+  <p>This OTP expires in 10 minutes.</p>
+`;
+
+    await sendEmail({
+      to: user.email,
+      subject: 'Password Reset Request',
+      html: message,
+    });
+
+     res.status(200).json({
+      success: true,
+      message: 'Reset link sent to email',
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+};
+
+// RESET PASSWORD
+exports.resetPasswordController = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired token' });
+    }
+
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Password reset successfully' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
 };
 
 // UPLOAD PROFILE PICTURE
