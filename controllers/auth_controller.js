@@ -36,7 +36,8 @@ exports.registerUser = async (req, res) => {
         const user = await User.create({
             fullName,
             email,
-            password
+            password,
+            role: role || 'user'
         });
 
         res.status(201).json({
@@ -81,7 +82,11 @@ exports.loginUser = async (req, res) => {
         res.status(200).json({
             success: true,
             token,
-            data: user
+            data: {
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role, 
+      }
         });
 
     } catch (error) {

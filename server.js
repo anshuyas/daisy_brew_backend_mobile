@@ -7,6 +7,10 @@ dotenv.config({ path: './config/config.env' });
 
 const connectDB = require('./config/db');
 
+const authRoutes = require('./routes/auth_route');
+const adminRoutes = require('./routes/admin_route');
+const orderRoutes = require('./routes/order_route');
+
 const startServer = async () => {
     try {
         // CONNECT DATABASE
@@ -20,11 +24,10 @@ const startServer = async () => {
         // This allows return files from backend/public
         app.use('/public', express.static(path.join(__dirname, 'public')));
 
-        // ROUTE IMPORT
-        const authRoutes = require('./routes/auth_route');
-
         // ROUTE MOUNT
         app.use('/api/v1', authRoutes);
+        app.use('/api/v1/admin', adminRoutes);
+        app.use('/api/v1/orders', orderRoutes);
 
         // TEST ROUTE
         app.get('/', (req, res) => {

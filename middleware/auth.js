@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const asyncHandler = require("./async");
 const User = require("../models/user_model");
 
+// Protect routes middleware
 const protect = asyncHandler(async (req, res, next) => {
   let token;
 
@@ -17,12 +18,14 @@ const protect = asyncHandler(async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = await User.findById(decoded.id);
 
-    if (typeof next === "function") {
-      next();
+    if (!req.user) {
+      return res.status(401).json({ message: "User not found" });
     }
+
+    next(); 
   } catch (error) {
     return res.status(401).json({ message: "Invalid token" });
   }
 });
 
-module.exports = protect;
+module.exports = protect; 
