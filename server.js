@@ -10,6 +10,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth_route');
 const adminRoutes = require('./routes/admin_route');
 const orderRoutes = require('./routes/order_route');
+const productRoutes = require('./routes/product_route');
 
 const startServer = async () => {
     try {
@@ -28,6 +29,7 @@ const startServer = async () => {
         app.use('/api/v1', authRoutes);
         app.use('/api/v1/admin', adminRoutes);
         app.use('/api/v1/orders', orderRoutes);
+        app.use('/api/v1/products', productRoutes);
 
         // TEST ROUTE
         app.get('/', (req, res) => {
