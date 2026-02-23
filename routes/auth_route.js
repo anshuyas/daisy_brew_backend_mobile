@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { registerUser, loginUser, forgotPasswordController, resetPasswordController, uploadProfilePicture, updateProfile, changePassword, updateShippingAddress } = require('../controllers/auth_controller');
-const protect = require('../middleware/auth.js');
+const { protect } = require('../middleware/auth.js');
 const { uploadImage } = require('../middleware/uploads'); 
 
 // Register and login

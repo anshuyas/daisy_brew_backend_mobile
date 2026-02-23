@@ -37,7 +37,7 @@ exports.registerUser = async (req, res) => {
             fullName,
             email,
             password,
-            role: role || 'user'
+            role: 'user'
         });
 
         res.status(201).json({
