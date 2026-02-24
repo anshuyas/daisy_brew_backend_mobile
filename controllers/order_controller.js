@@ -60,3 +60,11 @@ exports.updateOrderStatus = async (req, res) => {
 
   res.status(200).json(order);
 };
+
+// GET USER ORDERS
+exports.getMyOrders = async (req, res) => {
+  const orders = await Order.find({ user: req.user._id })
+    .sort({ createdAt: -1 });
+
+  res.status(200).json(orders);
+};
